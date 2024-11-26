@@ -17,13 +17,15 @@ All the datasets are processed to match their coordination systems. The cleaned 
 
 You are required to conduct the data analysis and data visualization for the final project:
 1. Spatial mapping NDVI and land cover/land use in 2019 (Refer to Module 4 and the review video of Modules 3-5)
+   
+- You can map the average NDVI in 2019 or a specific date NDVI in 2019.
+- Describe the spatial  distributions of NDVI and land cover/land use
 
-You can map the average NDVI in 2019 or a specific date NDVI in 2019.
-Describe the spatial  distributions of NDVI and land cover/land use
 2. ANOVA analysis of NDVI with month and land cover types using data in 2019 (Refer to Modules 5 and 6)
 
-Two-way ANOVA (one dependent variable and two independent variables)
-Interpret the ANOVA analysis
+- Two-way ANOVA (one dependent variable and two independent variables)
+- Interpret the ANOVA analysis
+  
 3. Ordinary linear regression analysis of NDVI with precipitation  (Refer to Modules 5 and 6)
 
 Please remove the missing value if there is any.
