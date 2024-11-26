@@ -14,6 +14,12 @@ TMPA/3B43 Rainfall Estimate:  https://disc.gsfc.nasa.gov/datasets/TRMM_3B43_7/su
 
 # Project Requirement
 All the datasets are processed to match their coordination systems. The cleaned datasets have the same coordination systems as the land cover/land use (MCD12Q1) data. 
+Transfer the projection of the IN polygon to match the projection of the land cover images.
+Transfer the projection of the precipitation data to match the projection of the land cover images.
+Mask NDVI, land covers, and precipitation data over the IN region.
+Merge 16-day NDVI data into monthly data.
+Transfer NDVI data and land cover to data frames. Each pixel is 500m * 500m. When transferring the pixels to data frames, the center of a pixel will have a point.
+Despite the different spatial resolutions of NDVI (Land cover) and precipitation data, we didn’t downscale the precipitation data from 0.25 degrees to 500m. We directly used the points (x and y coordinates) to extract the upscaled precipitation data. Thus, the scale of precipitation is much larger and coarser than that of the NDVI and land cover data.
 
 You are required to conduct the data analysis and data visualization for the final project:
 1. Spatial mapping NDVI and land cover/land use in 2019 (Refer to Module 4 and the review video of Modules 3-5)
@@ -28,11 +34,12 @@ You are required to conduct the data analysis and data visualization for the fin
   
 3. Ordinary linear regression analysis of NDVI with precipitation  (Refer to Modules 5 and 6)
 
-Please remove the missing value if there is any.
-Interpret the linear regression result
+- Please remove the missing value if there is any.
+- Interpret the linear regression result
+  
 4. Time series analysis with NDVI time series from 2013-2022 over croplands (Refer to Modules 7 and 8)
 
-Plot and decompose time series of NDVI
-Split the data into two parts: training data: 2013-2020; test data: 2021-2022
-Model the time series analysis and forecasting with the training data and valid it with the test data
-Interpret your time series analysis
+- Plot and decompose time series of NDVI
+- Split the data into two parts: training data: 2013-2020; test data: 2021-2022
+- Model the time series analysis and forecasting with the training data and valid it with the test data
+- Interpret your time series analysis
