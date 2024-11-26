@@ -1,0 +1,675 @@
+---
+title: "DATA ANALTYICS FOR ENVIRONMENTAL SCIENCE"
+author: "Charles Wiredu"
+date: "2024-04-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+The survival of humanity has high dependency on the existence of natural resources.There has however resulted in the need to improve the management of these resources as well as strengthen the knowledge base on the interactions between humans and the earth through resources available to them.The understanding of these interactions and variations of vegetation (NDVI) and land cover therefore becomes very essential source of information because it tend to highlight more spatial activities in the environment. Key data analysis techniques will be employed on the cleaned dataset which have the same coordination systems as the land cover/land use (MCD12Q1) data. 
+
+## Required libraries
+This project will utilize the libraries below to conduct spatial data analysis and visualization.
+```{r}
+setwd("C:/Users/charl/OneDrive/Desktop/DSCI 607 Data Analytics for Environmental Sciences")
+```
+
+
+```{r}
+library(sf)
+library(sp)
+library(raster)
+library(viridis)
+library(terra)
+library(tidyverse)
+```
+
+## Data Description 
+The data set used for this project has same coordination systems as the landcover(MCD12Q1) data. The MODIS Land Cover Type Product (MCD12Q1) supplies global maps of land cover at annual time steps and 500-m spatial resolution for 2001-present. The product contains 13 Science Data Sets (SDS;Table 1), including 5 legacy classification schemes (IGBP, UMD, LAI, BGC, and PFT; Tables 3- 7) and a new three layer legend based on the Land Cover Classification System (LCCS) from the Food and Agriculture Organization (Tables 8- 10; Di Gregorio, 2005; Sulla-Menashe et al., 2011). Also included are a Quality Assurance (QA) layer, the posterior probabilities for the three LCCS layers, and the binary land water mask used by the product. MCD12Q1 has been Stage 2 Validated based on cross-validation of the training dataset used to create the maps. Two data set are used in this project namely; the landcover and NVDI datasets.
+
+## Load Required Dataset
+The data set required for this project work will be loaded into R
+```{r}
+#######Loading Dataset1 ###############
+Landcover_NDVI_Rainfall_filter <- readRDS("C:/Users/charl/OneDrive/Desktop/DSCI 607 Data Analytics for Environmental Sciences/Landcover_NDVI_Rainfall_filter.rds")
+head(Landcover_NDVI_Rainfall_filter)
+class(Landcover_NDVI_Rainfall_filter)
+names(Landcover_NDVI_Rainfall_filter)
+dim(Landcover_NDVI_Rainfall_filter)
+```
+
+
+```{r}
+#######Loading Dataset2 ###############
+NDVI_timeseries_Month <- readRDS("C:/Users/charl/OneDrive/Desktop/DSCI 607 Data Analytics for Environmental Sciences/NDVI_timeseries_Month.rds")
+head(NDVI_timeseries_Month)# first 6 observations
+class(NDVI_timeseries_Month)
+names(NDVI_timeseries_Month)# names of columns used in the dataset
+#str(NDVI_timeseries_Month) # structure of dataset
+dim(NDVI_timeseries_Month) # dimension of the data set
+unique(NDVI_timeseries_Month$Year) # checking the different years within the dataset
+```
+
+## Descriptive Statistics
+Below is the descriptive analysis of the data set used for this project work. This study employs the R statistical software to conduct descriptive analysis on both data set coupled with checking the presence of any missing cases found within the projected dataset. The Landcover dataset has initial 4857113 observations and 6 variables. The NDVI dataset has 230 initial observations coupled with 5 variables.
+
+# Summary of Landcover Dataset
+Below is a computation of the basic statistics(minimum, maximum, mean, median) of all numeric variables found in this dataset.From the output below it can be suggested that the minimum x and y coordinate is -7699562 and 4201551 respectively.
+```{r}
+summary(Landcover_NDVI_Rainfall_filter)
+```
+
+```{r}
+#A summary ofthe landcover dataset by landcover type
+by(Landcover_NDVI_Rainfall_filter, Landcover_NDVI_Rainfall_filter$Landcover, summary)
+```
+
+```{r}
+sum(is.na(Landcover_NDVI_Rainfall_filter))
+```
+
+# Summary of NDVI Dataset
+Below is a computation of the basic statistics(minimum, maximum, mean, median) of all numeric variables found in NDVI dataset
+```{r}
+library(skimr)
+skim(NDVI_timeseries_Month)
+```
+```{r}
+sum(is.na(NDVI_timeseries_Month))
+```
+## Exploratory Data Analysis
+For the purpose of this project, there will be a conduct of data analysis and data visualization which includes Spatial mapping NDVI and land cover/land use in 2019. The following will be conducted on the dataset;
+
+- Map the average NDVI in 2019 or a specific date NDVI in 2019.
+
+- Describe the spatial  distributions of NDVI and land cover/land use
+
+# Spatial Mapping
+```{r}
+# Read the shapefile data for IN boundary
+IN<-st_read("Indiana.shp")
+
+# Reading in the downloaded land cover and NDVI raster data at 2019
+IGBP_raster <- raster("MCD12Q1_LC1_2019_001.tif")
+NDVI_raster <- raster("MOD13A1_NDVI_2019_209.tif")
+```
+```{r}
+## Transforming data
+# Transfer the project of the IN polygon with the same projection with the raster images
+crs(IGBP_raster) # cordinate reference system
+crs(IN)
+IN_pro <- st_transform(IN,crs(IGBP_raster))
+```
+```{r}
+## Cropping raster data
+IGBP_raster_IN <- mask(IGBP_raster,IN_pro)  ##use crop() if necessary
+NDVI_raster_IN <- mask(NDVI_raster,IN_pro)
+```
+
+```{r}
+## Visualize the raster images
+plot(IN_pro) # This will create a simple plot of the spatial data
+```
+```{r} 
+## plot of the used raster image files
+plot(IGBP_raster_IN,main = "Raster File")
+plot(NDVI_raster_IN,main = "Raster File")
+```
+```{r}
+#### data exploration 
+# Creating a spatial map using ggplot2 
+ggplot() +
+    geom_sf(data = IN, aes(fill = IN$REGION)) +
+    theme_minimal() +
+    labs(title = "Spatial Data Map", fill = "REGION")
+
+### below is the visualization of the region of the state of indiana
+```
+
+```{r}
+
+##Creating dataframe for the raster files for the purpose further visualization
+rast_df1 <- as.data.frame(IGBP_raster, xy = TRUE)
+rast_df2 <- as.data.frame(NDVI_raster, xy = TRUE)
+```
+
+```{r}
+### checking the unique month levels found in Landcover dataset
+months <- unique(Landcover_NDVI_Rainfall_filter$Month)
+months
+
+## visualization of landcover
+
+Landcover_NDVI_Rainfall_filter %>% filter(Month==months[1]) %>%
+  ggplot() +
+  geom_point(aes(x = x, y = y, fill = MeanNDVI, col = MeanNDVI))
+```
+```{r}
+# Visualising using ggplot2
+ggplot() + 
+  geom_raster(data =Landcover_NDVI_Rainfall_filter,
+              aes(x = x, y = y, fill = Landcover)) +
+  geom_sf(data = IN_pro, inherit.aes = FALSE, fill = NA) +
+  scale_fill_viridis(name = "Land Cover Type", discrete = TRUE) +
+  labs(title = "Land Cover classification",
+       subtitle = "01-01-2019 - 31-12-2019",
+       x = "Longitude",
+       y = "Latitude") +
+  theme_minimal()
+```
+
+Visualization based on Seasons- Winter, Spring, Summer, Fall
+```{r}
+## visualization based on seasons- Winter, Spring, Summer, Fall
+Landcover_NDVI_Rainfall_filter$season <- ifelse(Landcover_NDVI_Rainfall_filter$Month %in% c('1', '2', '3'), 'Winter',
+                    ifelse(Landcover_NDVI_Rainfall_filter$Month %in% c('4', '5', '6'), 'Spring', 
+                           ifelse(Landcover_NDVI_Rainfall_filter$Month %in% c('7', '8', '9'), 'Summer', 'Fall')))
+Landcover_NDVI_Rainfall_filter$season <- as.factor(Landcover_NDVI_Rainfall_filter$season)
+Landcover_NDVI_Rainfall_filter %>% filter(season == 'Fall') %>% ggplot(aes(x = x, y = y, fill = Rainfall)) + 
+  geom_tile()+ theme_minimal()+ 
+  scale_fill_viridis_c(option = 'viridis') + labs(title = 'Rainfall in Indiana', subtitle = 'Fall 2019') + xlab("") + ylab("") 
+```
+
+```{r}
+Landcover_NDVI_Rainfall_filter %>% filter(season == 'Spring') %>% ggplot(aes(x = x, y = y, fill = Rainfall)) + geom_tile()+ theme_minimal()+ 
+  scale_fill_viridis_c(option = 'viridis') + labs(title = 'Rainfall in Indiana', subtitle = 'Spring 2019') + xlab("") + ylab("") 
+```
+
+```{r}
+Landcover_NDVI_Rainfall_filter %>% filter(season == 'Winter') %>% ggplot(aes(x = x, y = y, fill = Rainfall)) + geom_tile()+ theme_minimal()+ 
+  scale_fill_viridis_c(option = 'viridis')+ labs(title = 'Rainfall in Indiana', subtitle = 'Winter 2019') + xlab("") + ylab("") 
+```
+
+```{r}
+Landcover_NDVI_Rainfall_filter %>% filter(season == 'Summer') %>% ggplot(aes(x = x, y = y, fill = Rainfall)) + geom_tile()+ theme_minimal() + 
+  scale_fill_viridis_c(option = 'viridis')+ labs(title = 'Rainfall in Indiana', subtitle = 'Summer 2019') + xlab("") + ylab("") 
+```
+```{r}
+## changing month to Jan, Feb etc.
+df <- NDVI_timeseries_Month
+df$Month <- month.abb[df$Month]
+```
+
+
+```{r}
+###### MeanNDVI ###########
+#visualization of the meanndvi variable
+ggplot(Landcover_NDVI_Rainfall_filter, aes(x=MeanNDVI)) +
+  geom_histogram(position= "dodge", alpha=0.5, binwidth = 0.005, color= "blue",fill="green")+
+  labs(title= "MeanNDVI Distribution",x= "MeanNDVI values",y= "count")+
+  theme_classic()
+## geom_histogram is the geometric function
+## Labs allow us to set the title
+## theme_ classic suggest the basic theme for the plotting area
+
+```
+```{r}
+###### NDVI ###########
+## boxplot indicating the vegetation index which suggest an increase of the vegetation index from Jan to Jun and a decline from Aug to Dec.
+ggplot(df, aes(x = Month, y = NDVI)) + geom_boxplot() + theme_minimal()+ scale_x_discrete(limits = month.abb)
+
+```
+```{r}
+##boxplot of meanNDVI against Landcover types
+ggplot(Landcover_NDVI_Rainfall_filter, aes(x = Landcover, y = MeanNDVI)) + geom_boxplot() + theme_minimal()
+```
+## Anova Analysis
+
+Below is ANOVA analysis of NDVI with month and land cover types using data in 2019.
+
+- Two-way ANOVA (one dependent variable and two independent variables)
+
+```{r}
+## group of landcover types agianst the summary of meanNDVI
+Landcover_NDVI_Rainfall_filter %>% group_by(Landcover) %>% summarise(mean(MeanNDVI))
+```
+
+```{r}
+##  Two way Anova Test
+two_way <- aov(MeanNDVI ~ Month + Landcover, data= Landcover_NDVI_Rainfall_filter)
+summary(two_way)
+```
+
+We can now check normality
+
+```{r}
+par(mfrow = c(1, 2)) # combine plots
+
+# histogram
+hist(two_way$residuals)
+
+# QQ-plot
+library(car)
+qqPlot(two_way$residuals
+)
+```
+From the histogram and QQ-plot above, we can observe that the normality assumption seems to be met. As shown above, the histogram roughly form a bell curve, indicating that the residuals follow a normal distribution. Furthermore, points in the QQ-plots roughly follow the straight line and most of them are within the confidence bands, also indicating that residuals follow approximately a normal distribution.
+
+## Ordinary linear regression analysis of NDVI with precipitation
+```{r}
+model <- lm(MeanNDVI ~ Rainfall, data = Landcover_NDVI_Rainfall_filter)
+model
+summary(model)
+```
+
+```{r}
+### model coefficients
+coefficients(model)
+```
+Slope and Intercept Plot
+```{r}
+ggplot(Landcover_NDVI_Rainfall_filter, aes(Rainfall, MeanNDVI)) +
+  geom_point() +
+  geom_abline(intercept = model$coefficients[1], 
+              slope = model$coefficients[2], 
+              color = "red")
+```
+
+
+## Results Interpretation
+
+The output table above in the first place reports the formula that was used to generate the results(call),  the summary of the model residuals and finally the coefficient and intercept of the results. The y-intercept of the linear regression equation is reported as 4.611e-01. The coefficients describes the estimated effect of Rainfall on NDVI. There is also a report on the residual standard error, R-square, f-statistics and p-value. The p-value reported for the model is 2.2e-16
+
+Because the p value is so low (p-value: < 2.2e-16), we can reject the null hypothesis and conclude that Rainfall has a statistically significant effect on NDVI.
+
+## Time series analysis with NDVI time series from 2013-2022 over croplands 
+Time series analysis with NDVI time series from 2013-2022 over croplands 
+
+- Plot and decompose time series of NDVI
+
+- Split the data into two parts: training data: 2013-2020; test data: 2021-2022
+
+- Model the time series analysis and forecasting with the training data and valid it with the test data
+
+- Interpret your time series analysis
+```{r}
+library(zoo)
+library(padr)
+library(plotly)
+library(forecast)
+library(knitr)
+library(tseries)
+
+```
+
+```{r}
+### Unique dates 
+dates <- unique(NDVI_timeseries_Month$YearMonth)
+dates
+```
+
+## Check for missing values
+```{r}
+# 2. Check for missing values
+missing_values <- sum(is.na(NDVI_timeseries_Month))
+if (missing_values > 0) {
+  print(paste("Number of missing values:", missing_values))
+} else {
+  print("No missing values found.")
+}
+
+```
+
+## Check for invalid NDVI values
+```{r}
+invalid_ndvi <- sum(NDVI_timeseries_Month$NDVI < -1 | NDVI_timeseries_Month$NDVI > 1)
+if (invalid_ndvi > 0) {
+  print(paste("Number of invalid NDVI values:", invalid_ndvi))
+  # You can take appropriate actions, such as removing or imputing invalid values
+} else {
+  print("No invalid NDVI values found.")
+}
+```
+## Average all points
+```{r}
+library(dplyr)
+station1 <- NDVI_timeseries_Month %>%
+  group_by(YearMonth) %>%
+  summarise(NDVI = mean(NDVI))
+```
+
+```{r}
+## first 10 rows of the NDVI data
+kable(head(station1,10),caption= "The first 10 rows of the  NDVI data")
+```
+
+
+```{r}
+# Convert YearMonth field from character to Date in date time format
+station1$YearMonth<-as_datetime(station1$YearMonth)
+###Choose three-year data
+SiteNDVI_10yrs<-station1 %>% 
+  select(YearMonth,NDVI) %>%  #only select variable we want
+  filter(YearMonth>="2013-01-01" & YearMonth< "2022-12-31")
+```
+
+```{r}
+# Check the first of the time frame
+head(SiteNDVI_10yrs,5)
+```
+
+
+```{r}
+# Check The End of the Time Frame
+tail(SiteNDVI_10yrs,5)
+```
+
+```{r}
+# find invalid NDVI
+InvalidNDVI <- SiteNDVI_10yrs%>% filter(NDVI<0)
+print(InvalidNDVI)
+```
+
+```{r}
+#### Original 10-year data
+ggplot(station1,aes(x=YearMonth,y=NDVI))+geom_line()
+```
+
+```{r}
+#### Use ggplot() for time series data visualization to any two-year data in the 10-year time range of 2013-01-01 to 2022-12-31.After subsetting
+ggplot(SiteNDVI_10yrs,aes(x=YearMonth,y=NDVI))+geom_line()
+```
+
+## Split the data into two parts: training data: 2013-2020; test data: 2021-2022
+
+Split the data from 2013-01-01 to 2023-12-31(11-year data) into two data sets.
+
+Training data: 2013-01-01 to 2020-12-31. 
+
+Test data: 2021-01-01 to 2022-12-31. 
+
+```{r}
+### 8 years
+SiteNDVI_8yrs_train<-SiteNDVI_10yrs %>%
+  filter(YearMonth>="2013-01-01" & YearMonth < "2020-12-31") 
+
+### 3 years
+SiteNDVI_3yrs_test<-SiteNDVI_10yrs %>%
+  filter(YearMonth>="2021-01-01" & YearMonth < "2022-12-31") 
+```
+
+```{r}
+###Time series visualization using ggplot()
+NDVI_plot <- SiteNDVI_8yrs_train %>%
+  ggplot(aes(x = YearMonth, y = NDVI)) +
+  geom_line(aes(color = "NDVI")) +
+  scale_x_datetime(name = "YearMonth", date_breaks = "2 year") +
+  scale_y_continuous(breaks = seq(0, 1, 0.2)) +
+  theme_minimal() +
+  labs(title = "Indiana NDIV over 2021", subtitle = "2020-1-1 - 2022-12-31")
+
+ggplotly(NDVI_plot)
+```
+
+## Convert training data and test data at 8-day scale to monthly scale
+
+We create a seasonal time series (msts), decompose the msts, visualize the decomposed multi-time series and then save the msts to a data frame object.
+```{r}
+SiteNDVI_8yrs_train_monthly <- SiteNDVI_8yrs_train %>% 
+  mutate(month = month(as.Date(YearMonth)), year = year(as.Date(YearMonth))) %>% 
+  group_by(year, month) %>%
+  summarise(mean_NDVI = mean(NDVI, na.rm = T), .groups = "keep") %>%
+  as.data.frame()
+
+SiteNDVI_8yrs_train_monthly <- SiteNDVI_8yrs_train_monthly[1:96,]
+
+
+
+SiteNDVI_3yrs_test_monthly <- SiteNDVI_3yrs_test %>% 
+  mutate(month = month(as.Date(YearMonth)), year = year(as.Date(YearMonth))) %>% 
+  group_by(year, month) %>%
+  summarise(mean_NDVI = mean(NDVI, na.rm = T), .groups = "keep") %>%
+  as.data.frame()
+```
+
+## Decompose the monthly training data you using both of stlm() and mstl() functions.
+
+```{r}
+##Create the time series object using ts()
+NDVI_ts_train<-ts(SiteNDVI_8yrs_train_monthly$mean_NDVI,start = c(2013,1), end = c(2022,12),frequency = 12)
+plot(NDVI_ts_train)
+```
+
+```{r}
+##Create the time series object using msts()
+NDVI_multi0 <-msts(SiteNDVI_8yrs_train_monthly$mean_NDVI,seasonal.periods = c(12)) #monthly
+plot(NDVI_multi0)
+```
+
+## Decompose the time series data
+
+```{r}
+library(zoo)
+NDVI_ts_train_dec<-decompose(na.StructTS(NDVI_ts_train))%>%
+  plot()
+
+```
+
+The plot above shows the original time series (top), the estimated trend component (second from top), the estimated seasonal component (third from top), and the estimated random component (bottom). From the above it can be observed that the estimated trend shows a small decrease in 2018-19, which is followed by a steady increase  from 2021 and rapid fall into 2022. There is a further decline in the trend as seen in the 2022 towards 2023.
+
+```{r}
+NDVI_ts_train_stl1 <- stlm(NDVI_ts_train, s.window = 'periodic')
+# NDVI_ts_train_stl1 <- stlm(NDVI_ts_train, s.window = c(12))
+# plot(NDVI_ts_train_stl1)  # cannot use plot() here
+
+
+#Method2: mstl(): Multiple seasonal decomposition: daily, weekly , monthly. 
+# Use x value
+NDVI_multi0 <-msts(SiteNDVI_8yrs_train_monthly$mean_NDVI,seasonal.periods = c(12)) #monthly
+NDVI_multi0%>%
+  mstl() %>% 
+  autoplot()
+```
+
+
+```{r}
+# use time series (ts) object
+NDVI_multi <-msts(NDVI_ts_train,seasonal.periods = c(12)) #monthly
+NDVI_multi%>%
+  mstl() %>% 
+  autoplot()
+```
+
+## Interpret the results of your Seasonality Analysis on the training data. For example, how NDVI changes along with time.
+
+From the output we can clearly see the seasonal component and separated upward trend of the data.
+```{r}
+#Method 1: moving average,Moving-average smoothing
+par(mfrow=c(1,1))
+ts.plot(NDVI_ts_train)
+sm <- ma(NDVI_ts_train, order=12) # 12 month, moving average,Moving-average smoothing
+lines(sm, col="blue") # plot
+```
+
+
+```{r}
+#Method 2: Simple exponential smoothing: Level Only
+model <- hw(NDVI_ts_train, initial = "optimal", h=(12), beta=NULL, gamma=NULL) # h is the no. periods to forecast
+
+#Method 3:Double Exponential smoothing: Level and Trend components
+model <- hw(NDVI_ts_train, initial = "optimal", h=(12), gamma=NULL)
+
+#Method 4: Holt Winters: Level, Trend and Seasonality
+model <- hw(NDVI_ts_train, initial = "optimal", h=(12))#12 define the forecast Period Length
+plot(model)
+```
+
+
+```{r}
+accuracy(model) # calculate accuracy measures
+```
+## Check the stationarity 
+
+If both ACF and PACF plots show significant autocorrelation only at lag 0 (i.e., the first value) and decay quickly afterward, it suggests the time series is likely stationary. If the ACF plot shows a slow decay and/or the PACF plot has significant correlations at multiple lags, it might indicate non-stationary. If there is a sinusoidal pattern or gradual decay in the ACF and PACF plots, it might indicate seasonality, suggesting non-stationary.
+
+```{r}
+acf(NDVI_ts_train,lag.max=60,xaxt="n", xlab="Lag (months)", na.action = na.pass)
+```
+
+```{r}
+pacf(NDVI_ts_train,lag.max=60,xaxt="n", xlab="Lag (months)", na.action = na.pass)
+```
+
+##  Arima: Models and Forecasting
+
+Step 6.1: Non-Seasonal ARIMA
+
+```{r}
+########################################1. None seasonal ARIMA-remove seasonality and then focus on the data  to removed seasonality
+NDVI_ts_train0<-ts(NDVI_ts_train,frequency = 12)
+AR0 <- Arima(NDVI_ts_train0, order = c(1,0,0)) #AR(1)
+```
+
+# Step 6.2: Seasonal ARIMA
+
+```{r}
+########################################2. Seasonal ARIMA-with seasonality
+AR <- Arima(NDVI_ts_train, order = c(2,0,2),seasonal=c(1,1,1)) 
+#AR <- Arima(NDVI_ts_train, order = c(1,0,3),seasonal=c(0,1,1)) 
+#AR <- Arima(NDVI_ts_train, order = c(2,0,2),seasonal=c(0,0,0)) #non-season arima
+
+#plotting the NDVI_ts_train series plus the forecast and 95% prediction intervals
+ts.plot(NDVI_ts_train,xlim=c(2013,2024))
+AR_forecast <- predict(AR, n.ahead = 24)$pred
+AR_forecast_se <- predict(AR, n.ahead = 24)$se
+points(AR_forecast, type = "l", col = 2,lwd = 3)
+points(AR_forecast - 2*AR_forecast_se, type = "l", col = 2, lty = 2,lwd=2)
+points(AR_forecast + 2*AR_forecast_se, type = "l", col= 2, lty = 2,lwd = 2)
+
+```
+
+```{r}
+## check for residuals
+checkresiduals(AR)
+## residuals bell shaped
+```
+# Step 6.3: Auto ARIMA
+
+```{r}
+########################################3. Auto ARIMA:produce the same result as the method2
+AutoArimaModel=auto.arima(NDVI_ts_train)
+AutoArimaModel   #ARIMA(2,0,2)(1,1,1)[12]
+```
+
+```{r}
+############predict
+ts.plot(NDVI_ts_train,xlim=c(2013,2024))
+AR_prediction <- predict(AutoArimaModel, n.ahead = 24)$pred
+AR_prediction_se <- predict(AutoArimaModel, n.ahead = 24)$se
+points(AR_prediction, type = "l", col = 2,lwd = 3)
+points(AR_prediction - 2*AR_prediction_se, type = "l", col = 2, lty = 2,lwd=2)
+points(AR_prediction + 2*AR_prediction_se, type = "l", col= 2, lty = 2,lwd = 2)
+```
+
+
+```{r}
+############forecast for two years
+AR_forecast<-forecast(AutoArimaModel, h=12*2)
+NDVI_ts_train%>%
+  autoplot() +
+  autolayer(AR_forecast,series = "Multi-Seasonal ARIMA",color = "purple")
+```
+
+# Step 6.4:A model with mstl() object
+
+```{r}
+###mlst object
+NDVI_multi <-msts(NDVI_ts_train,seasonal.periods = c(12)) #monthly
+NDVI_multi_ts <- NDVI_multi%>%
+  mstl()
+
+autoplot(NDVI_multi_ts)
+```
+
+
+```{r}
+f_arima1<-forecast(NDVI_multi_ts, h=12*2)  #ETS(M,N,N) 
+NDVI_ts_train%>%
+  autoplot() +
+  autolayer(f_arima1,series = "Multi-Seasonal Holt_Winter",color = "purple")
+```
+
+# Step 6.5: Models with stlm() object
+
+```{r}
+# stlm object: multi seasonal ARIMA model, using arima model,ARIMA(0,0,3)
+NDVI_stlm<-stlm(NDVI_ts_train, method = "arima")
+f_arima2<-forecast(NDVI_stlm, h=12*2) #ARIMA(0,0,3)
+NDVI_ts_train%>%
+  autoplot() +
+  autolayer(f_arima2,series = "Multi-Seasonal ARIMA",color = "purple")
+
+```
+7. Compare models and validate models
+
+Step 7.1: Compare AIC and BIC values and different errors
+
+The measures calculated are:
+
+- ME: Mean Error
+
+- RMSE: Root Mean Squared Error
+
+- MAE: Mean Absolute Error
+
+- MPE: Mean Percentage Error
+
+- MAPE: Mean Absolute Percentage Error
+
+- MASE: Mean Absolute Scaled Error
+
+- ACF1: Autocorrelation of errors at lag 1.
+
+By default, the MASE calculation is scaled using MAE of training set naive forecasts for non-seasonal time series, training set seasonal naive forecasts for seasonal time series and training set mean forecasts for non-time series data. If f is a numerical vector rather than a forecast object, the MASE will not be returned as the training data.
+
+
+```{r}
+AIC_BIC <- rbind(c(f_arima1$model$aic,f_arima1$model$bic),c(f_arima2$model$aic,f_arima2$model$bic),c(AutoArimaModel$aic,AutoArimaModel$bic),c(AR$aic,AR$bic))
+colnames(AIC_BIC) <- c("AIC","BIC")
+rownames(AIC_BIC) <- c("mlst","stlm_arima","auto_arima","AR")
+
+```
+
+```{r}
+accuracy(f_arima1)
+```
+
+
+```{r}
+Accuracy<-rbind(accuracy(f_arima1),accuracy(f_arima2),accuracy(AutoArimaModel),accuracy(AR))
+
+rownames(Accuracy) <- c("mlst","stlm_arima","auto_arima","AR")
+
+kable(Accuracy,caption= "Errors (Accuracy) comparison of 4 models")
+```
+
+```{r}
+## Model comparison using BIC and AIC
+kable(AIC_BIC,caption= "AIC and BIC values comparision of four models")
+```
+
+## Validate the model(s) with test data
+
+```{r}
+NDVI_prediction <- as.data.frame(f_arima1$mean)
+predicted_NDVI <- as.numeric(NDVI_prediction$x)
+
+observed_NDVI <- SiteNDVI_3yrs_test_monthly$mean_NDVI
+max1<-max(observed_NDVI)
+max2<-max(predicted_NDVI)
+plot(observed_NDVI,predicted_NDVI[1:length(observed_NDVI)],xlim=c(0,max(max1,max2)),ylim=c(0,max(max1, max2)), xlab="Observed NDVI" , ylab="Predicted NDVI" , col="red", pch=5)
+lines(c(0,max(max1, max2)),c(0,max(max1, max2)),col="black",lwd=3,lty=1)
+legend(95,40,c('','1:1Line'),lty=c(NA,1),pch=c(NA,NA),lwd=c(NA,3),bg='white',ncol=1,box.lty=0)
+```
+
+
+```{r}
+lmMod <- lm(observed_NDVI ~ predicted_NDVI[1:length(observed_NDVI)]) 
+summary (lmMod)
+```
+
