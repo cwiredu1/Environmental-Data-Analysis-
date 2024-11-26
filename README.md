@@ -1,2 +1,3 @@
 # Environmental-Data-Analysis-
 This repository details analysis on and cover types, precipitation, and vegetation index.Data used in the data preprocessing stage included land cover, precipitation, NDVI imagery, and IN polygon shapefile.
+Vegetation index, precipitation, and land cover types are essential concepts in environmental science and remote sensing, providing valuable insights into ecosystem health, climate dynamics, and land use patterns. Understanding the interplay between these factors is crucial for monitoring environmental changes, assessing ecosystem resilience, and informing sustainable land management practices.
